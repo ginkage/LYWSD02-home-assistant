@@ -2,9 +2,11 @@ import logging
 
 from homeassistant.helpers.entity import Entity
 from .const import ATTRIBUTION, DEFAULT_NAME, DOMAIN_DATA, ICON
+from datetime import timedelta
 
 _LOGGER = logging.getLogger(__name__)
 
+SCAN_INTERVAL = timedelta(minutes=5)
 
 async def async_setup_platform(
         hass,
@@ -29,19 +31,22 @@ class Lywsd02Sensor(Entity):
         # Send update "signal" to the component
         data = await self.hass.data[DOMAIN_DATA]["client"].update_data()
 
-        # Get new data (if any)
-        updated = self.hass.data[DOMAIN_DATA]["data"]
+        try:
+            # Get new data (if any)
+            updated = self.hass.data[DOMAIN_DATA]["data"]
 
-        # Check the data and update the value.
-        self._state = updated
+            # Check the data and update the value.
+            self._state = updated
 
-        # Set/update attributes
-        self.attr["attribution"] = ATTRIBUTION
-        self.attr["temperature"] = updated.get("temperature")
-        self.attr["humidity"] = updated.get("humidity")
-        self.attr["battery_level"] = updated.get("battery")
-        if updated.get("time"):
-            self.attr["time"] = updated.get("time").strftime("%H:%M:%S")
+            # Set/update attributes
+            self.attr["attribution"] = ATTRIBUTION
+            self.attr["temperature"] = updated.get("temperature")
+            self.attr["humidity"] = updated.get("humidity")
+            self.attr["battery_level"] = updated.get("battery")
+            if updated.get("time"):
+                self.attr["time"] = updated.get("time").strftime("%H:%M:%S")
+        except Exception as error:  # pylint: disable=broad-except
+            _LOGGER.error("Could not retrieve updated data - %s", error)
 
     @property
     def name(self):

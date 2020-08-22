@@ -63,8 +63,7 @@ async def async_setup(hass, config):
     mac = config[DOMAIN].get(CONF_MAC)
 
     # Configure the client.
-    client = Client(mac)
-    hass.data[DOMAIN_DATA]["client"] = Lywsd02Data(hass, client)
+    hass.data[DOMAIN_DATA]["client"] = Lywsd02Data(hass, mac)
 
     for platform in PLATFORMS:
         # Get platform specific configuration
@@ -111,10 +110,11 @@ async def check_files(hass):
 class Lywsd02Data:
     """This class handle communication and stores the data."""
 
-    def __init__(self, hass, client):
+    def __init__(self, hass, mac):
         """Initialize the class."""
         self.hass = hass
-        self.client = client
+        self.mac = mac
+        self.client = Client(self.mac)
 
     def _update_data_blocking(self):
         temperature = self.client.temperature
@@ -137,3 +137,4 @@ class Lywsd02Data:
             await loop.run_in_executor(None, self._update_data_blocking)
         except Exception as error:  # pylint: disable=broad-except
             _LOGGER.error("Could not update data - %s", error)
+            self.client = Client(self.mac)
